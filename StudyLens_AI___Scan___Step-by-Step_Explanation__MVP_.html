@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head><base href="https://d16ilfvy4mv02r.cloudfront.net/workspaces/BKpDKolN4wPgMB3295NciyuzJRtvns9T/21d2ec83-dfea-4dc6-941c-cab13d3d06fc/files/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyLens AI — Scan Question, Get Step-by-Step Explanations</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; }
+  .font-display { font-family: 'Space Grotesk', sans-serif; }
+  body { background: radial-gradient(1200px 600px at 10% -10%, #eef2ff 0%, transparent 60%), radial-gradient(1000px 600px at 100% 0%, #ecfeff 0%, transparent 55%), #f8fafc; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .step-card { animation: rise .45s ease both; }
+  @keyframes rise { from { opacity:0; transform: translateY(10px);} to {opacity:1; transform:none;} }
+  .dropzone.dragover { border-color:#6366f1; background:#eef2ff; }
+  .badge { font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:4px 10px; border-radius:999px; }
+  ::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+  .tab-btn.active { background:#4f46e5; color:#fff; }
+  .glow { box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
+</style>
+</head>
+<body class="min-h-screen text-slate-800">
+
+<div class="max-w-5xl mx-auto px-5 py-8">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-200">🔎</div>
+      <div>
+        <h1 class="font-display text-2xl font-bold text-slate-900">StudyLens <span class="text-indigo-600">AI</span></h1>
+        <p class="text-xs text-slate-500 -mt-0.5">Scan a question → understand the reasoning, not just the answer</p>
+      </div>
+    </div>
+    <div class="hidden sm:flex items-center gap-2">
+      <span class="badge bg-emerald-100 text-emerald-700">Free tier · 5 explanations left today</span>
+      <button class="text-xs font-semibold text-white bg-slate-900 px-4 py-2 rounded-xl hover:bg-slate-800 transition">Upgrade ✨</button>
+    </div>
+  </header>
+
+  <!-- Input Card -->
+  <div class="card p-6 mb-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">📸</span>
+      <h2 class="font-display font-semibold text-lg text-slate-900">Scan or Type Your Question</h2>
+    </div>
+
+    <div class="flex gap-2 mb-4" role="tablist">
+      <button id="tabUpload" class="tab-btn active text-sm font-semibold px-4 py-2 rounded-xl border border-slate-200 transition">Upload Photo</button>
+      <button id="tabType" class="tab-btn text-sm font-semibold px-4 py-2 rounded-xl border border-slate-200 transition">Type Question</button>
+    </div>
+
+    <!-- Upload panel -->
+    <div id="panelUpload">
+      <label id="dropzone" class="dropzone flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-2xl py-10 cursor-pointer transition text-center px-4">
+        <span class="text-3xl">🖼️</span>
+        <span class="text-sm font-medium text-slate-700">Drag & drop a photo of your worksheet, or click to browse</span>
+        <span class="text-xs text-slate-400">JPG, PNG — textbook page, homework, or exam question</span>
+        <input type="file" id="fileInput" accept="image/*" class="hidden">
+      </label>
+      <div id="imgPreviewWrap" class="hidden mt-4 flex gap-4 items-start">
+        <img id="imgPreview" class="w-40 h-40 object-cover rounded-2xl border border-slate-200" />
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-slate-800 mb-1">📝 Confirm extracted text</p>
+          <p class="text-xs text-slate-500 mb-2">Our OCR pulled the text below from your photo — edit if anything looks off, then analyze.</p>
+          <textarea id="ocrText" rows="3" class="w-full text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Type panel -->
+    <div id="panelType" class="hidden">
+      <textarea id="typedText" rows="4" placeholder="e.g. Solve for x: 3x + 5 = 20   |   or: What is 40% of 250?   |   or: x^2 - 5x + 6 = 0"
+        class="w-full text-sm border border-slate-200 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-200"></textarea>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button class="example text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full" data-ex="Solve for x: 3x + 5 = 20">3x + 5 = 20</button>
+        <button class="example text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full" data-ex="x^2 - 5x + 6 = 0">x² − 5x + 6 = 0</button>
+        <button class="example text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full" data-ex="What is 40% of 250?">40% of 250?</button>
+        <button class="example text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full" data-ex="1/4 + 2/3">1/4 + 2/3</button>
+        <button class="example text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full" data-ex="A rectangle has length 12 and width 5. Find its area and perimeter.">Rectangle area/perimeter</button>
+        <button class="example text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full" data-ex="12 + 4 * (6 - 2) / 2">12 + 4×(6−2)/2</button>
+      </div>
+    </div>
+
+    <button id="analyzeBtn" class="mt-5 w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl transition flex items-center gap-2 justify-center">
+      <span>🧠 Analyze &amp; Explain</span>
+    </button>
+    <p id="errorMsg" class="hidden text-sm text-rose-600 mt-2"></p>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="hidden card p-8 mb-6 text-center">
+    <div class="inline-flex items-center gap-3 text-slate-600">
+      <svg class="animate-spin h-5 w-5 text-indigo-600" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+      <span class="text-sm font-medium">Reading question, identifying subject & building explanation…</span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="hidden space-y-6"></div>
+
+</div>
+
+<script>
+const tabUpload = document.getElementById('tabUpload');
+const tabType = document.getElementById('tabType');
+const panelUpload = document.getElementById('panelUpload');
+const panelType = document.getElementById('panelType');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const imgPreviewWrap = document.getElementById('imgPreviewWrap');
+const imgPreview = document.getElementById('imgPreview');
+const ocrText = document.getElementById('ocrText');
+const typedText = document.getElementById('typedText');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const errorMsg = document.getElementById('errorMsg');
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
+
+tabUpload.onclick = () => { tabUpload.classList.add('active'); tabType.classList.remove('active'); panelUpload.classList.remove('hidden'); panelType.classList.add('hidden'); };
+tabType.onclick = () => { tabType.classList.add('active'); tabUpload.classList.remove('active'); panelType.classList.remove('hidden'); panelUpload.classList.add('hidden'); };
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+// Simulated OCR sample bank (since this demo has no live OCR backend)
+const OCR_SAMPLES = [
+  "Solve for x: 5x - 3 = 2x + 12",
+  "x^2 + 2x - 8 = 0",
+  "What is 25% of 180?",
+  "Simplify: 3/8 + 1/4",
+  "A triangle has base 10 cm and height 6 cm. Find its area."
+];
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imgPreview.src = ev.target.result;
+    imgPreviewWrap.classList.remove('hidden');
+    const sample = OCR_SAMPLES[Math.floor(Math.random()*OCR_SAMPLES.length)];
+    ocrText.value = sample;
+  };
+  reader.readAsDataURL(file);
+}
+
+document.querySelectorAll('.example').forEach(btn => {
+  btn.onclick = () => { typedText.value = btn.dataset.ex; typedText.focus(); };
+});
+
+analyzeBtn.onclick = () => {
+  errorMsg.classList.add('hidden');
+  let text = '';
+  if (!panelType.classList.contains('hidden')) {
+    text = typedText.value.trim();
+  } else {
+    text = ocrText.value.trim();
+  }
+  if (!text) {
+    errorMsg.textContent = 'Please upload a photo (and confirm the text) or type a question first.';
+    errorMsg.classList.remove('hidden');
+    return;
+  }
+  results.classList.add('hidden');
+  loading.classList.remove('hidden');
+  setTimeout(() => {
+    loading.classList.add('hidden');
+    renderAnalysis(text);
+  }, 900);
+};
+
+/* ---------------- Core "AI" Reasoning Engine ---------------- */
+
+function detectDifficulty(text, stepCount) {
+  const len = text.length;
+  if (stepCount >= 5 || len > 90) return 'Hard';
+  if (stepCount >= 3 || len > 45) return 'Medium';
+  return 'Easy';
+}
+
+function evalArithmeticSteps(expr) {
+  // Build a step trace respecting order of operations: parentheses -> */ -> +-
+  const steps = [];
+  let current = expr.replace(/\s+/g,'');
+  function safeEval(e){ return Function('"use strict";return (' + e + ')')(); }
+
+  // Step 1: resolve innermost parentheses one at a time
+  let guard = 0;
+  while (/\([^()]*\)/.test(current) && guard < 20) {
+    guard++;
+    current = current.replace(/\(([^()]*)\)/, (m, inner) => {
+      const val = safeEval(inner);
+      steps.push({ text: `Solve the parentheses first: (${inner}) = ${round(val)}`, expr: current.replace(m, String(round(val))) });
+      return round(val);
+    });
+  }
+  // Step 2: multiplication/division left to right
+  guard = 0;
+  while (/(-?\d+\.?\d*)\s*([*\/])\s*(-?\d+\.?\d*)/.test(current) && guard < 20) {
+    guard++;
+    current = current.replace(/(-?\d+\.?\d*)\s*([*\/])\s*(-?\d+\.?\d*)/, (m, a, op, b) => {
+      const val = op === '*' ? parseFloat(a)*parseFloat(b) : parseFloat(a)/parseFloat(b);
+      steps.push({ text: `${op==='*'?'Multiply':'Divide'}: ${a} ${op} ${b} = ${round(val)}`, expr: current.replace(m, String(round(val))) });
+      return round(val);
+    });
+  }
+  // Step 3: addition/subtraction left to right
+  guard = 0;
+  while (/(-?\d+\.?\d*)\s*([+\-])\s*(\d+\.?\d*)/.test(current) && guard < 20) {
+    guard++;
+    current = current.replace(/(-?\d+\.?\d*)\s*([+\-])\s*(\d+\.?\d*)/, (m, a, op, b) => {
+      const val = op === '+' ? parseFloat(a)+parseFloat(b) : parseFloat(a)-parseFloat(b);
+      steps.push({ text: `${op==='+'?'Add':'Subtract'}: ${a} ${op} ${b} = ${round(val)}`, expr: current.replace(m, String(round(val))) });
+      return round(val);
+    });
+  }
+  return { steps, answer: current };
+}
+function round(n){ return Math.round(n*10000)/10000; }
+
+function analyze(text) {
+  const clean = text.trim();
+  const lower = clean.toLowerCase();
+
+  // 1) Linear equation: e.g. "5x - 3 = 2x + 12" or "3x+5=20"
+  let m = clean.match(/(-?\d*\.?\d*)\s*x\s*([+\-]\s*\d+\.?\d*)?\s*=\s*(-?\d*\.?\d*)\s*x?\s*([+\-]\s*\d+\.?\d*)?/i);
+  if (/x/i.test(clean) && /=/.test(clean) && !/x\s*\^?\s*2|x\s*\*\s*x/i.test(clean)) {
+    return solveLinear(clean);
+  }
+  // 2) Quadratic: contains x^2 or x²
+  if (/x\s*\^?\s*2|x²/i.test(clean) && /=/.test(clean)) {
+    return solveQuadratic(clean);
+  }
+  // 3) Percentage: "X% of Y"
+  m = clean.match(/(-?\d+\.?\d*)\s*%\s*of\s*(-?\d+\.?\d*)/i);
+  if (m) return solvePercentage(clean, parseFloat(m[1]), parseFloat(m[2]));
+
+  // 4) Fractions like a/b + c/d or a/b - c/d etc (no variables)
+  if (/\d+\s*\/\s*\d+/.test(clean) && !/x/i.test(clean)) {
+    return solveFractions(clean);
+  }
+  // 5) Geometry keywords
+  if (/rectangle|triangle|circle|area|perimeter|circumference/i.test(clean)) {
+    return solveGeometry(clean);
+  }
+  // 6) Pure arithmetic expression
+  if (/^[\d\s\.\+\-\*\/\(\)]+$/.test(clean.replace(/[?]/g,''))) {
+    return solveArithmetic(clean);
+  }
+  // 7) Fallback generic word-problem strategy
+  return genericBreakdown(clean);
+}
+
+function baseResult(subject, steps) {
+  return { subject, difficulty: detectDifficulty(steps.map(s=>s.text||'').join(' '), steps.length), steps };
+}
+
+function solveLinear(text) {
+  // normalize: move everything to one side. Handle ax + b = cx + d
+  const eq = text.replace(/\s+/g,'');
+  const [lhs, rhs] = eq.split('=');
+  function parseSide(side) {
+    let coeff = 0, constVal = 0;
+    const terms = side.match(/[+\-]?\d*\.?\d*x|[+\-]?\d+\.?\d*/gi) || [];
+    terms.forEach(t => {
+      if (/x/i.test(t)) {
+        let c = t.replace(/x/i,'');
+        if (c === '' || c === '+') c = '1'; if (c === '-') c = '-1';
+        coeff += parseFloat(c);
+      } else if (t !== '') {
+        constVal += parseFloat(t);
+      }
+    });
+    return { coeff, constVal };
+  }
+  const L = parseSide(lhs), R = parseSide(rhs);
+  const steps = [];
+  steps.push({ text: `Original equation: ${text}`, detail: `We want to isolate <b>x</b> — get it alone on one side of the equation.` });
+  const combinedCoeff = round(L.coeff - R.coeff);
+  const combinedConst = round(R.constVal - L.constVal);
+  steps.push({ text: `Move all x-terms to the left and numbers to the right`, detail: `(${L.coeff}x − ${R.coeff}x) = (${R.constVal} − ${L.constVal})  →  ${combinedCoeff}x = ${combinedConst}` });
+  if (combinedCoeff === 0) {
+    steps.push({ text: `No unique solution`, detail: combinedConst === 0 ? 'This equation is true for all x (infinite solutions).' : 'This equation has no solution.' });
+    return { ...baseResult('Algebra — Linear Equations', steps), answer: combinedConst===0? 'All real numbers' : 'No solution',
+      mistakes: ['Forgetting to flip the sign when moving a term across the equals sign.'],
+      alt: 'Alternative: graph both sides as lines y = L(x) and y = R(x); the x-value of their intersection (if any) is the solution.' };
+  }
+  const solution = round(combinedConst / combinedCoeff);
+  steps.push({ text: `Divide both sides by ${combinedCoeff}`, detail: `x = ${combinedConst} / ${combinedCoeff} = <b>${solution}</b>` });
+  steps.push({ text: `Check by substituting x = ${solution} back into the original equation`, detail: `Both sides should be equal — this confirms the answer.` });
+  return { ...baseResult('Algebra — Linear Equations', steps), answer: `x = ${solution}`,
+    mistakes: [
+      'Forgetting to apply an operation to BOTH sides of the equation.',
+      'Sign errors when moving terms across the "=" sign (subtracting instead of adding, or vice versa).'
+    ],
+    alt: 'Alternative method: balance the equation visually with a "seesaw" model, or verify graphically by finding where two lines intersect.' };
+}
+
+function solveQuadratic(text) {
+  const eq = text.replace(/\s+/g,'').replace(/²/g,'^2');
+  const m = eq.match(/(-?\d*\.?\d*)x\^?2([+\-]\d*\.?\d*x)?([+\-]\d+\.?\d*)?=0/i);
+  let a=1,b=0,c=0;
+  if (m) {
+    a = m[1] === '' || m[1] === '+' ? 1 : (m[1] === '-' ? -1 : parseFloat(m[1]));
+    if (m[2]) { let bc = m[2].replace('x',''); if(bc==='+'||bc==='')bc='1'; if(bc==='-')bc='-1'; b = parseFloat(bc); }
+    if (m[3]) c = parseFloat(m[3]);
+  }
+  const steps = [];
+  steps.push({ text: `Identify a, b, c from ax² + bx + c = 0`, detail: `a = ${a}, b = ${b}, c = ${c}` });
+  const disc = round(b*b - 4*a*c);
+  steps.push({ text: `Calculate the discriminant: b² − 4ac`, detail: `(${b})² − 4(${a})(${c}) = ${disc}` });
+  let answer, extraStep;
+  if (disc < 0) {
+    answer = 'No real solutions (two complex roots)';
+    extraStep = { text: 'Discriminant is negative', detail: 'Since b² − 4ac < 0, there are no real x-values that satisfy the equation — the parabola never crosses the x-axis.' };
+  } else {
+    const sqrtDisc = Math.sqrt(disc);
+    const x1 = round((-b + sqrtDisc) / (2*a));
+    const x2 = round((-b - sqrtDisc) / (2*a));
+    extraStep = { text: `Apply the quadratic formula: x = (−b ± √(b²−4ac)) / 2a`, detail: `x = (${-b} ± √${disc}) / ${2*a}  →  x₁ = ${x1}, x₂ = ${x2}` };
+    answer = disc === 0 ? `x = ${x1} (one repeated root)` : `x₁ = ${x1}, x₂ = ${x2}`;
+  }
+  steps.push(extraStep);
+  steps.push({ text: 'Check your answer(s)', detail: 'Substitute each root back into the original equation to confirm both sides equal 0.' });
+  return { ...baseResult('Algebra — Quadratic Equations', steps), answer,
+    mistakes: [
+      'Sign errors when identifying b and c, especially with subtraction.',
+      'Forgetting the ± (plus-or-minus) — a quadratic usually has TWO solutions.',
+      'Miscalculating the discriminant (b² − 4ac), which decides how many real roots exist.'
+    ],
+    alt: 'Alternative method: try factoring first — if a, b, c allow it, (x − r₁)(x − r₂) = 0 is often faster than the quadratic formula. Completing the square is another reliable alternative.' };
+}
+
+function solvePercentage(text, pct, base) {
+  const steps = [];
+  steps.push({ text: `Convert the percentage to a decimal`, detail: `${pct}% = ${pct}/100 = ${round(pct/100)}` });
+  const val = round((pct/100)*base);
+  steps.push({ text: `Multiply the decimal by the base number`, detail: `${round(pct/100)} × ${base} = <b>${val}</b>` });
+  return { ...baseResult('Arithmetic — Percentages', steps), answer: `${val}`,
+    mistakes: ['Forgetting to divide the percent by 100 before multiplying.', 'Confusing "% of" with "% increase/decrease from".'],
+    alt: `Alternative shortcut: 10% of ${base} is ${round(base*0.1)}, so you can build up (e.g. ${pct}% = ${Math.round(pct/10)} × 10%) using mental math instead of a calculator.` };
+}
+
+function solveFractions(text) {
+  const eq = text.replace(/\s+/g,'');
+  const m = eq.match(/(-?\d+)\/(\d+)\s*([+\-])\s*(-?\d+)\/(\d+)/);
+  if (!m) return solveArithmetic(text);
+  const [_, n1, d1, op, n2, d2] = m;
+  const D1=parseInt(d1), D2=parseInt(d2), N1=parseInt(n1), N2=parseInt(n2);
+  function gcd(a,b){return b?gcd(b,a%b):a;}
+  const lcm = (D1*D2)/gcd(D1,D2);
+  const steps = [];
+  steps.push({ text: `Find a common denominator for ${d1} and ${d2}`, detail: `LCM(${d1}, ${d2}) = ${lcm}` });
+  const nn1 = N1*(lcm/D1), nn2 = N2*(lcm/D2);
+  steps.push({ text: `Rewrite each fraction with denominator ${lcm}`, detail: `${n1}/${d1} = ${nn1}/${lcm} &nbsp;&nbsp; ${n2}/${d2} = ${nn2}/${lcm}` });
+  const resultNum = op === '+' ? nn1+nn2 : nn1-nn2;
+  steps.push({ text: `${op==='+'?'Add':'Subtract'} the numerators, keep the denominator`, detail: `${nn1} ${op} ${nn2} = ${resultNum} → ${resultNum}/${lcm}` });
+  const g = gcd(Math.abs(resultNum), lcm) || 1;
+  const simp = `${resultNum/g}/${lcm/g}`;
+  if (g > 1) steps.push({ text: `Simplify the fraction`, detail: `Divide top and bottom by ${g}: ${resultNum}/${lcm} = <b>${simp}</b>` });
+  return { ...baseResult('Arithmetic — Fractions', steps), answer: g>1? simp : `${resultNum}/${lcm}`,
+    mistakes: ['Adding/subtracting numerators and denominators directly without a common denominator.', 'Forgetting to simplify the final fraction.'],
+    alt: 'Alternative: convert both fractions to decimals first, do the operation, then convert back if a fraction is required.' };
+}
+
+function solveGeometry(text) {
+  const lower = text.toLowerCase();
+  const nums = (text.match(/-?\d+\.?\d*/g) || []).map(Number);
+  const steps = [];
+  if (/rectangle/.test(lower) && nums.length >= 2) {
+    const [l, w] = nums;
+    steps.push({ text: 'Identify the formulas', detail: 'Area = length × width. Perimeter = 2 × (length + width).' });
+    steps.push({ text: `Calculate area`, detail: `${l} × ${w} = <b>${round(l*w)}</b>` });
+    steps.push({ text: `Calculate perimeter`, detail: `2 × (${l} + ${w}) = <b>${round(2*(l+w))}</b>` });
+    return { ...baseResult('Geometry — Rectangles', steps), answer: `Area = ${round(l*w)}, Perimeter = ${round(2*(l+w))}`,
+      mistakes: ['Mixing up the area and perimeter formulas.', 'Forgetting to multiply by 2 for perimeter.'],
+      alt: 'Alternative: sketch the rectangle and count/label each side — visualizing helps avoid formula mix-ups.' };
+  }
+  if (/triangle/.test(lower) && nums.length >= 2) {
+    const [b, h] = nums;
+    steps.push({ text: 'Identify the formula', detail: 'Area of a triangle = ½ × base × height.' });
+    steps.push({ text: `Plug in the values`, detail: `½ × ${b} × ${h} = <b>${round(0.5*b*h)}</b>` });
+    return { ...baseResult('Geometry — Triangles', steps), answer: `Area = ${round(0.5*b*h)}`,
+      mistakes: ['Forgetting the ½ in the triangle area formula.', 'Using a slanted side instead of the perpendicular height.'],
+      alt: 'Alternative: a triangle is exactly half of a rectangle with the same base and height — visualize that split.' };
+  }
+  if (/circle|circumference/.test(lower) && nums.length >= 1) {
+    const r = nums[0];
+    steps.push({ text: 'Identify the formulas', detail: 'Area = π × r². Circumference = 2 × π × r.' });
+    steps.push({ text: `Calculate area`, detail: `π × ${r}² ≈ <b>${round(Math.PI*r*r)}</b>` });
+    steps.push({ text: `Calculate circumference`, detail: `2 × π × ${r} ≈ <b>${round(2*Math.PI*r)}</b>` });
+    return { ...baseResult('Geometry — Circles', steps), answer: `Area ≈ ${round(Math.PI*r*r)}, Circumference ≈ ${round(2*Math.PI*r)}`,
+      mistakes: ['Confusing radius with diameter (radius = diameter ÷ 2).', 'Using 3.14 as a rough estimate when more precision is needed.'],
+      alt: 'Alternative: if diameter is given instead of radius, first divide by 2, then apply the same formulas.' };
+  }
+  return genericBreakdown(text);
+}
+
+function solveArithmetic(text) {
+  const clean = text.replace(/[?]/g,'');
+  const { steps: rawSteps, answer } = evalArithmeticSteps(clean);
+  const steps = [{ text: `Original expression: ${clean}`, detail: 'Follow order of operations: Parentheses → Multiplication/Division → Addition/Subtraction (PEMDAS).' }, ...rawSteps.map(s => ({ text: s.text, detail: `Running expression: ${s.expr}` }))];
+  return { ...baseResult('Arithmetic — Order of Operations', steps), answer,
+    mistakes: ['Adding/subtracting before finishing all multiplication and division.', 'Skipping parentheses and working left-to-right blindly.'],
+    alt: 'Alternative: rewrite the expression as a vertical calculation, solving one operation type at a time to reduce careless errors.' };
+}
+
+function genericBreakdown(text) {
+  const steps = [
+    { text: 'Read the question carefully and underline what is being asked', detail: 'Identify the exact quantity or value the question wants you to find.' },
+    { text: 'List the information given', detail: 'Write down every number, condition, or fact stated in the problem.' },
+    { text: 'Identify the relevant concept or formula', detail: 'Think about which topic (algebra, geometry, probability, etc.) this connects to, and which formula or rule applies.' },
+    { text: 'Set up an equation or plan', detail: 'Translate the words into a mathematical expression or a logical sequence of steps.' },
+    { text: 'Solve step-by-step and check your answer', detail: 'Work through the calculation carefully, then sanity-check: does the answer make sense in context?' }
+  ];
+  return { ...baseResult('General Problem-Solving Strategy', steps), answer: 'See the step-by-step strategy above — refine your question for a fully worked solution.',
+    mistakes: ['Jumping straight to a calculation before understanding what is actually being asked.', 'Ignoring units or context clues in the problem statement.'],
+    alt: 'Alternative: try the AI Tutor Chat to ask clarifying questions about this specific problem for a more tailored explanation.' };
+}
+
+/* ---------------- Render ---------------- */
+
+function renderAnalysis(originalText) {
+  const r = analyze(originalText);
+  results.innerHTML = '';
+  results.classList.remove('hidden');
+
+  const diffColor = { Easy: 'bg-emerald-100 text-emerald-700', Medium: 'bg-amber-100 text-amber-700', Hard: 'bg-rose-100 text-rose-700' }[r.difficulty];
+
+  results.innerHTML += `
+    <div class="card p-6 step-card">
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <span class="badge bg-indigo-100 text-indigo-700">${r.subject}</span>
+        <span class="badge ${diffColor}">${r.difficulty}</span>
+        <span class="badge bg-slate-100 text-slate-600">Scanned Question</span>
+      </div>
+      <p class="text-slate-700 text-sm"><span class="font-semibold">Question:</span> ${originalText}</p>
+    </div>
+
+    <div class="card p-6 step-card">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">🧠</span>
+        <h3 class="font-display font-semibold text-lg">Step-by-Step Explanation</h3>
+      </div>
+      <ol class="space-y-4">
+        ${r.steps.map((s, i) => `
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">${i+1}</span>
+            <div>
+              <p class="text-sm font-semibold text-slate-800">${s.text}</p>
+              ${s.detail ? `<p class="text-sm text-slate-500 mt-0.5">${s.detail}</p>` : ''}
+            </div>
+          </li>
+        `).join('')}
+      </ol>
+      <div class="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
+        <span class="text-lg">✅</span>
+        <p class="text-sm font-semibold text-slate-800">Final Answer: <span class="text-indigo-700">${r.answer}</span></p>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-6">
+      <div class="card p-6 step-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">⚠️</span>
+          <h3 class="font-display font-semibold">Common Mistakes</h3>
+        </div>
+        <ul class="space-y-2 text-sm text-slate-600 list-disc list-inside">
+          ${(r.mistakes||[]).map(m => `<li>${m}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="card p-6 step-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">🔀</span>
+          <h3 class="font-display font-semibold">Alternative Method</h3>
+        </div>
+        <p class="text-sm text-slate-600">${r.alt || 'No alternative method needed for this problem type.'}</p>
+      </div>
+    </div>
+
+    <div class="card p-6 step-card bg-gradient-to-br from-indigo-50 to-cyan-50 border-indigo-100">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-lg">🤖</span>
+        <h3 class="font-display font-semibold">Still confused?</h3>
+      </div>
+      <p class="text-sm text-slate-600 mb-3">Ask a follow-up question and the AI Tutor will adjust the explanation to your level.</p>
+      <div class="flex gap-2">
+        <input id="followupInput" placeholder="e.g. Why do we divide both sides?" class="flex-1 text-sm border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white">
+        <button id="followupBtn" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-xl">Ask</button>
+      </div>
+      <div id="followupAnswer" class="hidden mt-3 text-sm text-slate-700 bg-white rounded-xl p-3 border border-slate-200"></div>
+    </div>
+  `;
+
+  document.getElementById('followupBtn').onclick = () => {
+    const q = document.getElementById('followupInput').value.trim();
+    const box = document.getElementById('followupAnswer');
+    if (!q) return;
+    box.classList.remove('hidden');
+    box.innerHTML = `<span class="font-semibold">You asked:</span> "${q}"<br><br>Great question — in this problem, each step follows directly from the one before it so the equation stays balanced (whatever you do to one side, you must do to the other). Re-read step-by-step above slowly, and try covering the answer to predict the next step yourself before revealing it — that's the fastest way to build real understanding rather than memorizing the answer.`;
+  };
+
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
